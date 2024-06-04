@@ -37,7 +37,9 @@ const App: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 text-center">
-            <p className="text-3xl font-bold text-gray-300">No data</p>
+            <p className="text-3xl font-bold text-gray-300">
+              Tidak ada aktivitas, yuk tambahkan
+            </p>
           </div>
         )}
       </main>

@@ -1,8 +1,8 @@
-import React, { Fragment, useContext, useState } from "react";
+import React, { Fragment, useContext, useEffect, useState } from "react";
 import { Transition, Dialog } from "@headlessui/react";
 import { EditorContent, BubbleMenu, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { DataContext, contextProps } from "../../context";
+import { DataContext, contextProps, dataProps } from "../../context";
 
 type colorProps = {
   color: string;
@@ -30,25 +30,11 @@ const Modal: React.FC<{ isOpen: boolean; closeModal: () => void }> = ({
   isOpen,
   closeModal,
 }) => {
-  const [newData, setNewData] = useState<{
-    title: string;
-    time: string;
-    date: string;
-    description?: string;
-    createdAt: string;
-    color: string;
-  }>({
-    title: "",
-    time: "",
-    date: "",
-    description: "",
-    createdAt: "",
-    color: "",
-  });
   const [popupColor, setPopupColor] = useState<boolean>(false);
-  const [selectedColor, setSelectedColor] = useState<string>("#edede4");
+  const [selectedColor, setSelectedColor] = useState<string>("");
 
-  const { data, setData } = useContext<contextProps>(DataContext);
+  const { data, addTodo, newData, setNewData } =
+    useContext<contextProps>(DataContext);
 
   const editor = useEditor({
     extensions: [StarterKit],
@@ -60,21 +46,28 @@ const Modal: React.FC<{ isOpen: boolean; closeModal: () => void }> = ({
     },
   });
 
+  useEffect(() => {
+    if (isOpen) {
+      const randomColor = colors[Math.floor(Math.random() * colors.length)];
+      setSelectedColor(randomColor.color);
+    } else {
+      setSelectedColor("");
+    }
+  }, [isOpen]);
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     // console.log(editor?.getHTML());
-    setData([
-      ...data,
-      {
-        id: data.length + 1,
-        title: newData.title,
-        time: newData.time,
-        date: newData.date,
-        description: editor?.getHTML() || "",
-        createdAt: new Date().toISOString(),
-        color: selectedColor,
-      },
-    ]);
+    addTodo({
+      id: data.length + 1,
+      title: newData.title,
+      time: newData.time,
+      date: newData.date,
+      description: editor?.getHTML() || "",
+      createdAt: new Date().toISOString(),
+      color: selectedColor,
+    });
+    setNewData({} as dataProps);
     closeModal();
   };
 
