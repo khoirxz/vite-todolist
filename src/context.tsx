@@ -18,6 +18,8 @@ export type contextProps = {
   newData: dataProps;
   setNewData: React.Dispatch<React.SetStateAction<dataProps>>;
   addTodo: (newData: dataProps) => Promise<void>;
+  editTodo: (newData: dataProps) => Promise<void>;
+  getOneTodo: (id: number) => Promise<void>;
 };
 
 const DataContext = createContext<contextProps>({
@@ -26,6 +28,8 @@ const DataContext = createContext<contextProps>({
   newData: {} as dataProps,
   setNewData: () => {},
   addTodo: async () => {},
+  editTodo: async () => {},
+  getOneTodo: async () => {},
 });
 
 const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -76,9 +80,65 @@ const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     });
   };
 
+  const getOneTodo = async (id: number) => {
+    const db = await openDB(DATABASE_NAME, DATABASE_VERSION, {
+      upgrade(db) {
+        db.createObjectStore(OBJECT_STORE_NAME, { keyPath: "id" });
+      },
+    });
+    const tx = db.transaction(OBJECT_STORE_NAME, "readonly");
+    const store = tx.objectStore(OBJECT_STORE_NAME);
+    const req = store.get(id);
+    const dataFromIndexed = await req;
+    setNewData(dataFromIndexed);
+  };
+
+  /**
+   * Edits a todo item in the database.
+   *
+   * @param {dataProps} newData - The new data for the todo item.
+   * @return {Promise<void>} A promise that resolves when the todo item is edited.
+   */
+  const editTodo = async (newData: dataProps) => {
+    const { id, title, time, date, description, createdAt, color } = newData;
+    const db = await openDB(DATABASE_NAME, DATABASE_VERSION, {
+      /**
+       * Upgrades the database by creating an object store with the given name and key path.
+       *
+       * @param {IDBDatabase} db - The database object to upgrade.
+       */
+      upgrade(db) {
+        db.createObjectStore(OBJECT_STORE_NAME, { keyPath: "id" });
+      },
+    });
+    const tx = db.transaction(OBJECT_STORE_NAME, "readwrite");
+    const store = tx.objectStore(OBJECT_STORE_NAME);
+    store.put({
+      id,
+      title,
+      time,
+      date,
+      description,
+      createdAt,
+      color,
+    });
+
+    setData((old) => old.map((item) => (item.id === id ? newData : item)));
+
+    setNewData({} as dataProps);
+  };
+
   return (
     <DataContext.Provider
-      value={{ data, setData, newData, setNewData, addTodo }}
+      value={{
+        data,
+        setData,
+        newData,
+        setNewData,
+        addTodo,
+        editTodo,
+        getOneTodo,
+      }}
     >
       {children}
     </DataContext.Provider>
